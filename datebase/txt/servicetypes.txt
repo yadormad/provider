@@ -1,0 +1,11 @@
+tv chanels {
+    30 50 100
+}
+internet speed {
+    1
+    2
+    3
+    4
+    5
+}
+phone
