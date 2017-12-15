@@ -13,7 +13,7 @@ public interface Controller {
     void addClient(Client newClient);
     void deleteClient(int clientNumber);
     Collection<Client> getAllClients();
-    void addService(Service newService);
+    void addService(Service newService) throws WrongServiceTypeException;
     void deleteService(int serviceNumber);
     void updateService(Service service);
     Collection<Service> getAllServices();

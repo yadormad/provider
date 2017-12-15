@@ -8,11 +8,13 @@ import internetprovider.common.exceptions.ProviderException;
 import internetprovider.common.exceptions.varieties.*;
 import internetprovider.controller.Controller;
 import internetprovider.view.View;
+import internetprovider.view.viewexception.ExitException;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
 
 public class ConsoleView implements View {
     private Controller controller;
@@ -45,7 +47,8 @@ public class ConsoleView implements View {
             String clientName, clientInfo, serviceName;
             Date startDate, endDate;
             ServiceType serviceType;
-            int serviceId, clientId;
+            int serviceId, clientId ;
+            boolean isExit = false;
             System.out.println("Enter comand (enter 'help' to get a description of all the commands):");
             comand = scanner.next();
             switch (comand) {
@@ -68,11 +71,7 @@ public class ConsoleView implements View {
                 case "services":
                     if (controller.getAllClients().isEmpty()) throw new NoClientsException("No clients yet added");
                     if (controller.getAllServices().isEmpty()) throw new NoServicesException("No services yet added");
-
-                    System.out.println("Enter client id:");
-                    clientId = scanner.nextInt();
-                    if (!checkId(clientId, controller.getAllClients())) throw new WrongClientIdException("No such client"); //проверка в контроллере?
-
+                    clientId = scanId("client");
                     showClientServices(clientId);
                     break;
                 case "addclient":
@@ -84,80 +83,42 @@ public class ConsoleView implements View {
                     break;
                 case "addservice":
                     if (controller.getAllClients().isEmpty()) throw new NoClientsException("No clients yet added");
-                    System.out.println("Enter client id:");
-                    clientId = scanner.nextInt();
-                    if (!checkId(clientId, controller.getAllClients())) throw new WrongClientIdException("No such client");
+                    clientId = scanId("client");
+                    if (isExit) return true;
                     System.out.println("Enter service name:");
                     serviceName = scanner.next();
-                    System.out.println("Enter one of the following service types:");
-                    for (ServiceType type : serviceTypes) {
-                        System.out.println(type.toString());
-                    }
-                    try {
-                        serviceType = ServiceType.valueOf(scanner.next().toUpperCase());
-                    } catch (IllegalArgumentException e) {
-                        throw new WrongServiceTypeException("Wrong service type");
-                    }
-                    System.out.println("Enter start service date. Date format - " + dateFormat.toLocalizedPattern() + ':');
-                    try {
-                        startDate = dateFormat.parse(scanner.next());
-                    } catch (ParseException e) {
-                        throw new DateFormatException("Wrong date format");
-                    }
-                    System.out.println("Enter end service date:");
-                    try {
-                        endDate = dateFormat.parse(scanner.next());
-                    } catch (ParseException e) {
-                        throw new DateFormatException("Wrong date format");
-                    }
-                    if (startDate.after(endDate)) throw new DateOrderException("Wrong date order");
+                    serviceType = scanServiceType();
+                    if (isExit) return true;
+                    startDate = scanDate(null);
+                    if(isExit) return true;
+                    endDate = scanDate(startDate);
+                    if(isExit) return true;
                     addService(clientId, serviceName, serviceType, startDate, endDate);
                     System.out.println("Service added");
                     break;
                 case "delclient":
                     if (controller.getAllClients().isEmpty()) throw new NoClientsException("No clients yet added");
-                    System.out.println("Enter client id:");
-                    clientId = scanner.nextInt();
-                    if (!checkId(clientId, controller.getAllClients())) throw new WrongClientIdException("No such client");
+                    clientId = scanId("client");
+                    if (isExit) return true;
                     deleteClient(clientId);
                     break;
                 case "delservice":
                     if (controller.getAllServices().isEmpty()) throw new NoServicesException("No services yet added");
-                    System.out.println("Enter service id:");
-                    serviceId = scanner.nextInt();
-                    if (!checkId(serviceId, controller.getAllServices())) throw new WrongServiceIdException("No such service");
+                    serviceId = scanId("service");
+                    if (isExit) return true;
                     deleteService(serviceId);
                     break;
                 case "updservice":
                     if (controller.getAllServices().isEmpty()) throw new NoServicesException("No services yet added");
-                    System.out.println("Enter service number:");
-                    serviceId = scanner.nextInt();
-                    if (!checkId(serviceId, controller.getAllServices())) throw new WrongServiceIdException("No such service");
+                    serviceId = scanId("service");
+                    if (isExit) return true;
                     System.out.println("Enter service name:");
                     serviceName = scanner.next();
-                    System.out.println("Enter one of the following service types:");
-                    for (ServiceType type : serviceTypes) {
-                        System.out.println(type.toString());
-                    }
-                    try {
-                        serviceType = ServiceType.valueOf(scanner.next().toUpperCase());
-                    } catch (IllegalArgumentException e) {
-                        throw new WrongServiceTypeException("Wrong service type");
-                    }
-                    System.out.println("Enter start service date. Date format - " + dateFormat.toLocalizedPattern() + ':');
-                    try {
-                        startDate = dateFormat.parse(scanner.next());
-                    } catch (ParseException e) {
-                        throw new DateFormatException("Wrong date format");
-                    }
-                    System.out.println("Enter end service date:");
-                    try {
-                        endDate = dateFormat.parse(scanner.next());
-                    } catch (ParseException e) {
-                        throw new DateFormatException("Wrong date format");
-                    }
-                    if (startDate.after(endDate)) throw new DateOrderException("Wrong date order");
-                    updateService(serviceId, serviceName, serviceType, startDate, endDate);
+                    startDate = scanDate(null);
+                    if(isExit) return true;
+                    endDate = scanDate(startDate);
+                    if(isExit) return true;
+                    updateService(serviceId, serviceName, startDate, endDate);
                     System.out.println("Service updated");
                     break;
                 case "commit":
@@ -169,6 +130,12 @@ public class ConsoleView implements View {
                     }
                     break;
                 case "quit":
+                    try {
+                        commit();
+                    } catch (DbAccessException e) {
+                        System.err.println(e.getMessage());
+                        return false;
+                    }
                     return false;
                 default:
                     System.out.println("Wrong comand");
@@ -176,18 +143,78 @@ public class ConsoleView implements View {
             }
         } catch (ProviderException e) {
             System.err.println(e.getMessage());
-            /*try {
-                Thread.sleep(100);
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-            }*/
             System.out.println("Try again");
-        } catch (InputMismatchException e) {
-            scanner.next();
-            System.err.println("Id must be integer");
-            System.out.println("Try again");
+        } catch (ExitException e) {
+
         }
         return true;
+    }
+
+    private Date scanDate(Date startDate) throws ExitException {
+        String value;
+        Date date;
+        while (true) {
+            if(startDate == null) System.out.println("Enter start service date:");
+            else System.out.println("Enter end service date:");
+            try {
+                value = scanner.next();
+                if(value.equalsIgnoreCase("exit")) {
+                    throw new ExitException();
+                }
+                date = dateFormat.parse(value);
+                if (startDate != null && startDate.after(date)) throw new DateOrderException("Wrong date order");
+            } catch (ParseException e) {
+                System.err.println("Wrong date format");
+                System.out.println("Try again ('exit' for stop entering)");
+            } catch (DateOrderException e) {
+                System.err.println(e.getMessage());
+                System.out.println("Try again ('exit' for stop entering)");
+            }
+        }
+    }
+
+    private ServiceType scanServiceType() throws ExitException {
+        String value;
+        while(true) {
+            System.out.println("Enter one of the following service types:");
+            for (ServiceType type : serviceTypes) {
+                System.out.println(type.toString());
+            }
+            try {
+                value = scanner.next();
+                if(value.equalsIgnoreCase("exit")) {
+                    throw new ExitException();
+                }
+                return ServiceType.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.err.println("Wrong service type");
+                System.out.println("Try again ('exit' for stop entering)");
+            }
+        }
+    }
+
+    private int scanId(String entityName) throws ExitException {
+        int id;
+        String value;
+        while (true) {
+            try {
+                System.out.println("Enter " + entityName + " id:");
+                value = scanner.next();
+                if(value.equalsIgnoreCase("exit")) {
+                    throw new ExitException();
+                }
+                id = Integer.parseInt(value);
+                if (!checkId(id, controller.getAllClients()))
+                    throw new WrongClientIdException("No such " + entityName);
+                return id;
+            } catch (ProviderException e){
+                System.err.println(e.getMessage());
+                System.out.println("Try again ('exit' for stop entering)");
+            } catch (NumberFormatException e) {
+                System.err.println("Id must be integer");
+                System.out.println("Try again ('exit' for stop entering)");
+            }
+        }
     }
 
     private boolean checkId(int id, Collection<? extends ProviderEntity> entities) {
@@ -226,7 +253,7 @@ public class ConsoleView implements View {
         }
     }
 
-    private void addService(int clientId, String serviceName, ServiceType serviceType, Date startDate, Date endDate) {
+    private void addService(int clientId, String serviceName, ServiceType serviceType, Date startDate, Date endDate) throws WrongServiceTypeException {
         Service newService = new Service(0, clientId, serviceName, serviceType, false, startDate, endDate);
         controller.addService(newService);
     }
@@ -236,9 +263,9 @@ public class ConsoleView implements View {
         System.out.println("Service deleted");
     }
 
-    private void updateService(int serviceId, String serviceName, ServiceType serviceType, Date startDate, Date endDate) {
+    private void updateService(int serviceId, String serviceName, Date startDate, Date endDate) {
         Service newService;
-        newService = new Service(serviceId, 0, serviceName, serviceType, false, startDate, endDate);
+        newService = new Service(serviceId, 0, serviceName, ServiceType.INTERNET, false, startDate, endDate);
         controller.updateService(newService);
     }
 

@@ -66,15 +66,15 @@ public class GlobalOperations implements Controller{
     }
 
     @Override
-    public void addService(Service newService) {
+    public void addService(Service newService) throws WrongServiceTypeException {
         if(!clients.isEmpty()) {
-            /*ArrayList<Service> clientServices = (ArrayList<Service>) getClientServices(newService.getClientId());
+            ArrayList<Service> clientServices = (ArrayList<Service>) getClientServices(newService.getClientId());
             if(!clientServices.isEmpty() && clientServices != null) {
                 for (Service nextClientService : clientServices) {
                     if(nextClientService.getType().equals(newService.getType()))
                         throw new WrongServiceTypeException("This client already has a service with this type");
                 }
-            }*/
+            }
             for (Client client : clients) {
                 if (((Integer) client.getId()).equals(newService.getClientId())) {
                     newService.setId(serviceSequence.getNextId());
@@ -104,7 +104,6 @@ public class GlobalOperations implements Controller{
             for (Service nextService : services) {
                 if (((Integer) nextService.getId()).equals(service.getId())) {
                     nextService.setName(service.getName());
-                    nextService.setType(service.getType());
                     nextService.setStatus(service.getStatus());
                     nextService.setStartDate(service.getStartDate());
                     nextService.setEndDate(service.getEndDate());

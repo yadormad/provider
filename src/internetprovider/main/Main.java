@@ -17,6 +17,7 @@ public class Main {
     public static void main(String[] args) {
         //инициализация модели
         DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+        dateFormat.setLenient(false);
         String clientsPathFile = "datebase/txt/clients.txt";
         String servicePathFile = "datebase/txt/services.txt";
         ClientManager clientManager = new ClientManagerTxt(clientsPathFile);
