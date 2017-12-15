@@ -48,7 +48,6 @@ public class ConsoleView implements View {
             Date startDate, endDate;
             ServiceType serviceType;
             int serviceId, clientId ;
-            boolean isExit = false;
             System.out.println("Enter comand (enter 'help' to get a description of all the commands):");
             comand = scanner.next();
             switch (comand) {
@@ -84,40 +83,31 @@ public class ConsoleView implements View {
                 case "addservice":
                     if (controller.getAllClients().isEmpty()) throw new NoClientsException("No clients yet added");
                     clientId = scanId("client");
-                    if (isExit) return true;
                     System.out.println("Enter service name:");
                     serviceName = scanner.next();
                     serviceType = scanServiceType();
-                    if (isExit) return true;
                     startDate = scanDate(null);
-                    if(isExit) return true;
                     endDate = scanDate(startDate);
-                    if(isExit) return true;
                     addService(clientId, serviceName, serviceType, startDate, endDate);
                     System.out.println("Service added");
                     break;
                 case "delclient":
                     if (controller.getAllClients().isEmpty()) throw new NoClientsException("No clients yet added");
                     clientId = scanId("client");
-                    if (isExit) return true;
                     deleteClient(clientId);
                     break;
                 case "delservice":
                     if (controller.getAllServices().isEmpty()) throw new NoServicesException("No services yet added");
                     serviceId = scanId("service");
-                    if (isExit) return true;
                     deleteService(serviceId);
                     break;
                 case "updservice":
                     if (controller.getAllServices().isEmpty()) throw new NoServicesException("No services yet added");
                     serviceId = scanId("service");
-                    if (isExit) return true;
                     System.out.println("Enter service name:");
                     serviceName = scanner.next();
                     startDate = scanDate(null);
-                    if(isExit) return true;
                     endDate = scanDate(startDate);
-                    if(isExit) return true;
                     updateService(serviceId, serviceName, startDate, endDate);
                     System.out.println("Service updated");
                     break;
@@ -145,7 +135,7 @@ public class ConsoleView implements View {
             System.err.println(e.getMessage());
             System.out.println("Try again");
         } catch (ExitException e) {
-
+            System.out.println();
         }
         return true;
     }
@@ -232,7 +222,7 @@ public class ConsoleView implements View {
         System.out.println("Client added");
     }
 
-    private void deleteClient(int clientNumber) throws WrongClientIdException, NoClientsException {
+    private void deleteClient(int clientNumber) {
         controller.deleteClient(clientNumber);
         System.out.println("Client deleted");
     }
@@ -258,7 +248,7 @@ public class ConsoleView implements View {
         controller.addService(newService);
     }
 
-    private void deleteService(int serviceId) throws WrongServiceIdException, NoServicesException {
+    private void deleteService(int serviceId) {
         controller.deleteService(serviceId);
         System.out.println("Service deleted");
     }
